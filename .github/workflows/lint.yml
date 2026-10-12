@@ -1,0 +1,63 @@
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  yaml:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate workflow YAML
+        run: |
+          pip install --quiet pyyaml
+          python - <<'PY'
+          import glob, sys
+          import yaml
+
+          files = sorted(glob.glob('.github/workflows/*.yml') +
+                         glob.glob('.github/workflows/*.yaml'))
+          if not files:
+              print('no workflow files found')
+              sys.exit(1)
+
+          for path in files:
+              with open(path, encoding='utf-8') as f:
+                  doc = yaml.safe_load(f)
+              if not isinstance(doc, dict) or 'jobs' not in doc:
+                  print(f'{path}: missing top-level "jobs"')
+                  sys.exit(1)
+              for name, job in doc['jobs'].items():
+                  if 'runs-on' not in job:
+                      print(f'{path}: job "{name}" has no runs-on')
+                      sys.exit(1)
+                  if 'steps' not in job:
+                      print(f'{path}: job "{name}" has no steps')
+                      sys.exit(1)
+              print(f'{path}: ok ({len(doc["jobs"])} job(s))')
+          PY
+
+      - name: Check repository layout
+        shell: bash
+        run: |
+          set -e
+          missing=0
+          for f in README.md LICENSE.md .gitignore ww2ogg-cs.csproj; do
+            if [ ! -f "$f" ]; then
+              echo "missing $f"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then exit 1; fi
+          echo "repository layout ok"

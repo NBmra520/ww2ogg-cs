@@ -1,0 +1,15 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+publish/
+[Ll]og/
+
+# Conversion output
+*_extracted/
+
+# User-specific / IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo

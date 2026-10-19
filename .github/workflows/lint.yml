@@ -64,7 +64,17 @@ jobs:
 
   build:
     needs: yaml
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            artifact: ww2ogg-cs-win-x64
+          - os: ubuntu-latest
+            rid: linux-x64
+            artifact: ww2ogg-cs-linux-x64
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
@@ -81,10 +91,16 @@ jobs:
         run: dotnet build ww2ogg-cs.csproj --configuration Release --no-restore
 
       - name: Publish
-        run: dotnet publish ww2ogg-cs.csproj -c Release -o ./publish
+        run: >
+          dotnet publish ww2ogg-cs.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained true
+          -p:PublishSingleFile=true
+          -o ./publish
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ww2ogg-cs-release
+          name: ${{ matrix.artifact }}
           path: ./publish
